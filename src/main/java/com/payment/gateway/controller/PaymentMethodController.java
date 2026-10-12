@@ -24,7 +24,6 @@ public class PaymentMethodController {
             @RequestBody @Valid CreatePaymentMethodRequest request
     ) {
         PaymentMethod paymentMethod = service.create(request);
-
         return toResponse(paymentMethod);
     }
 
@@ -32,7 +31,6 @@ public class PaymentMethodController {
     @ResponseStatus(HttpStatus.OK)
     public PaymentMethodResponse getPaymentMethod(@PathVariable UUID id) {
         PaymentMethod paymentMethod = service.findById(id);
-
         return toResponse(paymentMethod);
     }
 

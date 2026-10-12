@@ -59,6 +59,12 @@ public class PaymentIntentService {
                     "must belong to the same customer.");
         }
 
+        // to validate payment intent --> payment method relationship
+        if (paymentIntent.getPaymentMethod() != null ) {
+            throw new InvalidPaymentMethodException("The payment intent already have an " +
+                    "associated payment method.");
+        }
+
         // entity manager persist changes without intervention
         paymentIntent.setPaymentMethod(paymentMethod);
         paymentIntent.transitionTo(PaymentIntentStatus.REQUIRES_CONFIRMATION);
