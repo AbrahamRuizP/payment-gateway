@@ -14,7 +14,6 @@ import java.util.UUID;
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
 @Table(name = "idempotency_key")
 public class IdempotencyKey {
 
@@ -22,15 +21,17 @@ public class IdempotencyKey {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false)
-    private String key;
+    @Column(nullable = false, name = "idempotency_key")
+    private String idempotencyKey;
 
-    @Column(nullable = false, name = "request_hash")
+    @Column(nullable = false, name = "request_hash", length = 64)
     private String requestHash;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private KeyStatus status;
+
+    private Integer responseStatus;
 
     @Column(nullable = false)
     private Instant createdAt;
@@ -38,15 +39,15 @@ public class IdempotencyKey {
     @Column(nullable = false)
     private Instant updatedAt;
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "payment_intent_id")
     private PaymentIntent paymentIntent;
 
-    @OneToOne
-    @JoinColumn(name = "merchant_id")
+    @ManyToOne
+    @JoinColumn(name = "merchant_id", nullable = false)
     private Merchant merchant;
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "customer_id")
     private Customer customer;
 
