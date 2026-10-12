@@ -55,7 +55,8 @@ class PaymentIntentServiceTest {
         when(paymentIntentRepository.save(any(PaymentIntent.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        PaymentIntent result = service.create(request);
+        // TODO: fix this method
+        PaymentIntent result = service.create(request, "");
 
         ArgumentCaptor<PaymentIntent> captor = ArgumentCaptor.forClass(PaymentIntent.class);
         verify(paymentIntentRepository).save(captor.capture());
@@ -75,7 +76,8 @@ class PaymentIntentServiceTest {
         CreatePaymentIntentRequest request = createRequest(UUID.randomUUID(), customerId);
         when(customerRepository.existsByIdAndDeletedFalse(customerId)).thenReturn(false);
 
-        assertThrows(CustomerNotFoundException.class, () -> service.create(request));
+        // TODO: fix this method
+        assertThrows(CustomerNotFoundException.class, () -> service.create(request, ""));
 
         verifyNoInteractions(merchantRepository, paymentIntentRepository);
     }
@@ -88,7 +90,8 @@ class PaymentIntentServiceTest {
         when(customerRepository.existsByIdAndDeletedFalse(customerId)).thenReturn(true);
         when(merchantRepository.existsByIdAndStatus(merchantId, MerchantStatus.ACTIVE)).thenReturn(false);
 
-        assertThrows(MerchantNotFoundException.class, () -> service.create(request));
+        // TODO: fix this method
+        assertThrows(MerchantNotFoundException.class, () -> service.create(request, ""));
 
         verify(paymentIntentRepository, never()).save(any());
     }

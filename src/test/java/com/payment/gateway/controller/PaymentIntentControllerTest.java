@@ -59,7 +59,8 @@ public class PaymentIntentControllerTest {
                 paymentIntent.getAmount(), Currency.USD, "test intent", merchantId, customerId
         );
 
-        when(paymentIntentService.create(request))
+        // TODO: fix this method, add idempotency key
+        when(paymentIntentService.create(request, ""))
                 .thenReturn(paymentIntent);
 
         mockMvc.perform(post("/payment-intents")
@@ -73,7 +74,8 @@ public class PaymentIntentControllerTest {
                 .andExpect(jsonPath("$.description").value("test intent"))
                 .andExpect(jsonPath("$.createdAt").value(now.toString()));
 
-        verify(paymentIntentService).create(any(CreatePaymentIntentRequest.class));
+        // TODO: fix this method, add idempotency key
+        verify(paymentIntentService).create(any(CreatePaymentIntentRequest.class), "");
     }
 
     @Test
@@ -151,7 +153,8 @@ public class PaymentIntentControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
 
-        verify(paymentIntentService, never()).create(any(CreatePaymentIntentRequest.class));
+        // TODO: fix this method, add valid idempotency key
+        verify(paymentIntentService, never()).create(any(CreatePaymentIntentRequest.class), "");
     }
 
     @Test
