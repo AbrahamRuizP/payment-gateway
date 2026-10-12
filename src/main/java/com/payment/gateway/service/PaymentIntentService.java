@@ -60,9 +60,9 @@ public class PaymentIntentService {
         }
 
         // to validate payment intent --> payment method relationship
-        if (paymentIntent.getPaymentMethod() != null ) {
-            throw new InvalidPaymentMethodException("The payment intent already have an " +
-                    "associated payment method.");
+        if (paymentIntent.getPaymentMethod().getId() == paymentMethod.getId() ) {
+            throw new InvalidPaymentMethodException("The payment intent already have " +
+                    "associated the current payment method.");
         }
 
         // entity manager persist changes without intervention
@@ -79,7 +79,10 @@ public class PaymentIntentService {
         // verify if payment intent has an associated payment method
         if (paymentIntent.getPaymentMethod() == null) {
             throw new PaymentMethodRequiredException(id);
+        } else if (paymentIntent.getStatus() == PaymentIntentStatus.PROCESSING) {
+            return paymentIntent;
         }
+
         paymentIntent.transitionTo(PaymentIntentStatus.PROCESSING);
 
         // TODO: init processing payment action
