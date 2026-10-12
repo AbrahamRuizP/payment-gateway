@@ -1,0 +1,63 @@
+package com.payment.gateway.entity;
+
+import com.payment.gateway.entity.enums.KeyStatus;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.time.Instant;
+import java.util.UUID;
+
+@Entity
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Table(name = "idempotency_key")
+public class IdempotencyKey {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
+
+    @Column(nullable = false)
+    private String key;
+
+    @Column(nullable = false, name = "request_hash")
+    private String requestHash;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private KeyStatus status;
+
+    @Column(nullable = false)
+    private Instant createdAt;
+
+    @Column(nullable = false)
+    private Instant updatedAt;
+
+    @OneToOne
+    @JoinColumn(name = "payment_intent_id")
+    private PaymentIntent paymentIntent;
+
+    @OneToOne
+    @JoinColumn(name = "merchant_id")
+    private Merchant merchant;
+
+    @OneToOne
+    @JoinColumn(name = "customer_id")
+    private Customer customer;
+
+    @PrePersist
+    public void prePersist() {
+        if (createdAt == null) createdAt = Instant.now();
+        if (updatedAt == null) updatedAt = Instant.now();
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        updatedAt = Instant.now();
+    }
+}
