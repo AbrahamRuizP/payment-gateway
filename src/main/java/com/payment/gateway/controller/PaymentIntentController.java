@@ -6,6 +6,7 @@ import com.payment.gateway.controller.DTO.PaymentIntentResponse;
 import com.payment.gateway.entity.PaymentIntent;
 import com.payment.gateway.service.*;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -17,21 +18,23 @@ import java.util.UUID;
 @RequestMapping("/payment-intents")
 public class PaymentIntentController {
 
+    /*
+    Step by Step when creating Payment Intent:
+    - createPaymentIntent (idempotency)
+        | ---- createPaymentMethod
+    - attachPaymentMethod (idempotency)
+    - confirmPaymentIntent (idempotency)
+     */
+
     private final PaymentIntentService service;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public PaymentIntentResponse createPaymentIntent(
-            @RequestBody @Valid CreatePaymentIntentRequest request
+            @RequestBody @Valid CreatePaymentIntentRequest request,
+            @NotBlank @RequestHeader(name = "Idempotency-Key") String idempotencyKey
     ) {
-        PaymentIntent intent = service.create(request);
-        return toResponse(intent);
-    }
-
-    @GetMapping("/{id}")
-    @ResponseStatus(HttpStatus.OK)
-    public PaymentIntentResponse getPaymentIntent(@PathVariable UUID id) {
-        PaymentIntent intent = service.findById(id);
+        PaymentIntent intent = service.create(request, idempotencyKey);
         return toResponse(intent);
     }
 
@@ -42,7 +45,6 @@ public class PaymentIntentController {
             @RequestBody @Valid AttachPaymentMethodRequest request
     ) {
         PaymentIntent intent = service.attachPaymentMethod(id, request);
-
         return toResponse(intent);
     }
 
