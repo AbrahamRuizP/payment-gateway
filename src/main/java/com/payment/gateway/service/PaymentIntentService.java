@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -73,7 +74,7 @@ public class PaymentIntentService {
     ) {
         String currentHash = HashBuilder.buildPaymentIntentHash(request);
 
-        if (!currentHash.equals(existingKey.getRequestHash())) {
+        if (!Objects.equals(currentHash, existingKey.getRequestHash())) {
             throw new IdempotencyKeyReuseWithDifferentRequestException(
                     "The idempotency key was already used with a different request."
             );
@@ -165,6 +166,7 @@ public class PaymentIntentService {
     ) {
         IdempotencyKey idempotencyKey = new IdempotencyKey();
         idempotencyKey.setMerchant(Merchant.builder().id(request.merchantId()).build());
+        idempotencyKey.setCustomer(Customer.builder().id(request.customerId()).build());
         idempotencyKey.setRequestHash(HashBuilder.buildPaymentIntentHash(request));
         idempotencyKey.setStatus(KeyStatus.COMPLETED);
         idempotencyKey.setPaymentIntent(paymentIntent);

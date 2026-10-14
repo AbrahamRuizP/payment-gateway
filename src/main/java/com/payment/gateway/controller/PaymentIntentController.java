@@ -7,6 +7,7 @@ import com.payment.gateway.entity.PaymentIntent;
 import com.payment.gateway.service.PaymentIntentService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -36,7 +37,7 @@ public class PaymentIntentController {
     @ResponseStatus(HttpStatus.CREATED)
     public PaymentIntentResponse createPaymentIntent(
             @RequestBody @Valid CreatePaymentIntentRequest request,
-            @NotBlank @RequestHeader(name = "Idempotency-Key") String idempotencyKey
+            @NotBlank @Size(max = 100) @RequestHeader(name = "Idempotency-Key") String idempotencyKey
     ) {
         PaymentIntent intent = service.create(request, idempotencyKey);
         return toResponse(intent);
