@@ -2,16 +2,15 @@ package com.payment.gateway.service;
 
 import com.payment.gateway.controller.DTO.AttachPaymentMethodRequest;
 import com.payment.gateway.controller.DTO.CreatePaymentIntentRequest;
-import com.payment.gateway.entity.Customer;
-import com.payment.gateway.entity.Merchant;
-import com.payment.gateway.entity.PaymentIntent;
-import com.payment.gateway.entity.PaymentMethod;
+import com.payment.gateway.entity.*;
+import com.payment.gateway.entity.enums.KeyStatus;
 import com.payment.gateway.entity.enums.MerchantStatus;
 import com.payment.gateway.entity.enums.PaymentIntentStatus;
 import com.payment.gateway.exception.*;
 import com.payment.gateway.repository.CustomerRepository;
 import com.payment.gateway.repository.MerchantRepository;
 import com.payment.gateway.repository.PaymentIntentRepository;
+import com.payment.gateway.utility.Sha64;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,6 +22,7 @@ import java.util.UUID;
 public class PaymentIntentService {
 
     private final PaymentIntentRepository paymentIntentRepository;
+    private final IdempotencyKeyService idempotencyKeyService;
     private final PaymentMethodService paymentMethodService;
     private final CustomerRepository customerRepository;
     private final MerchantRepository merchantRepository;
@@ -33,7 +33,14 @@ public class PaymentIntentService {
     }
 
     @Transactional
-    public PaymentIntent create(CreatePaymentIntentRequest request) {
+    public PaymentIntent create(
+            CreatePaymentIntentRequest request,
+            String idempotencyKey
+    ) {
+        if (idempotencyKey == null || idempotencyKey.isBlank()) {
+            throw new IllegalArgumentException("Invalid idempotency key");
+        }
+
         if (!customerRepository.existsByIdAndDeletedFalse(request.customerId())) {
             throw new CustomerNotFoundException(request.customerId());
 
@@ -41,8 +48,33 @@ public class PaymentIntentService {
             throw new MerchantNotFoundException(request.merchantId());
         }
 
-        PaymentIntent paymentIntent = buildIntent(request);
-        return paymentIntentRepository.save(paymentIntent);
+        IdempotencyKey idempotencyKeyFound
+                = idempotencyKeyService.findByMerchantIdAndIdempotencyKey(request.merchantId(), idempotencyKey);
+
+        if (idempotencyKeyFound != null) {
+            KeyStatus status = idempotencyKeyFound.getStatus();
+            String currHash = Sha64.hash(request.toString());
+            String prevHash = idempotencyKeyFound.getRequestHash();
+
+            if (currHash.equals(prevHash)) {
+                if (status.equals(KeyStatus.COMPLETED) || status.equals(KeyStatus.PROCESSING)) {
+                    // returning existing payment intent
+                    return findById(idempotencyKeyFound.getPaymentIntent().getId());
+                }
+            }
+            // if hashes are different, continue normal processing
+        }
+
+        // saving payment intent
+        PaymentIntent intentBuilt = buildIntent(request);
+        PaymentIntent intentSaved = paymentIntentRepository.save(intentBuilt);
+
+        // creating idempotency key
+        IdempotencyKey idempotencyKeyBuilt
+                = buildIdempotencyKey(intentSaved, request, idempotencyKey);
+        idempotencyKeyService.save(idempotencyKeyBuilt);
+
+        return intentSaved;
     }
 
     @Transactional
@@ -60,7 +92,7 @@ public class PaymentIntentService {
         }
 
         // to validate payment intent --> payment method relationship
-        if (paymentIntent.getPaymentMethod().getId() == paymentMethod.getId() ) {
+        if (paymentIntent.getPaymentMethod() != null) {
             throw new InvalidPaymentMethodException("The payment intent already have " +
                     "associated the current payment method.");
         }
@@ -99,5 +131,20 @@ public class PaymentIntentService {
         paymentIntent.setMerchant(Merchant.builder().id(request.merchantId()).build());
 
         return paymentIntent;
+    }
+
+    private static IdempotencyKey buildIdempotencyKey(
+            PaymentIntent paymentIntent,
+            CreatePaymentIntentRequest request,
+            String key
+    ) {
+        IdempotencyKey idempotencyKey = new IdempotencyKey();
+        idempotencyKey.setMerchant(Merchant.builder().id(request.merchantId()).build());
+        idempotencyKey.setRequestHash(Sha64.hash(request.toString()));
+        idempotencyKey.setStatus(KeyStatus.PROCESSING);
+        idempotencyKey.setPaymentIntent(paymentIntent);
+        idempotencyKey.setIdempotencyKey(key);
+
+        return idempotencyKey;
     }
 }
