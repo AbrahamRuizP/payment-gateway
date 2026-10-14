@@ -4,6 +4,10 @@ spring:
   application:
     name: payment-gateway
 
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
   profiles:
     active: local
 
