@@ -23,7 +23,7 @@ public class IdempotencyKey {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false, name = "idempotency_key")
+    @Column(nullable = false, name = "idempotency_key", length = 100)
     private String idempotencyKey;
 
     @Column(nullable = false, name = "request_hash", length = 64)
