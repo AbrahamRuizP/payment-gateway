@@ -4,7 +4,7 @@ import com.payment.gateway.controller.DTO.AttachPaymentMethodRequest;
 import com.payment.gateway.controller.DTO.CreatePaymentIntentRequest;
 import com.payment.gateway.controller.DTO.PaymentIntentResponse;
 import com.payment.gateway.entity.PaymentIntent;
-import com.payment.gateway.service.*;
+import com.payment.gateway.service.PaymentIntentService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +28,10 @@ public class PaymentIntentController {
 
     private final PaymentIntentService service;
 
+    /*
+    TODO: review if its valid always return the same status (201 Created)
+        even when the resource already exist (?)
+     */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public PaymentIntentResponse createPaymentIntent(
