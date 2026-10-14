@@ -73,16 +73,6 @@ public class GlobalExceptionHandler {
         );
     }
 
-//    public ErrorResponse handleInvalidPaymentIntentTransition(
-//        InvalidPaymentIntentTransitionException exception,
-//        HttpServletRequest request
-//    ) {
-//        return new ErrorResponse(
-//            Instant.now(),
-//            HttpStatus.
-//        );
-//    }
-
     @ExceptionHandler(PaymentMethodRequiredException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handlePaymentMethodRequired(

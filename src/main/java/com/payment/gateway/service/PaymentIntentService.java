@@ -45,37 +45,7 @@ public class PaymentIntentService {
                 = idempotencyKeyService.findByMerchantIdAndIdempotencyKey(request.merchantId(), idempotencyKey);
 
         if (idempotencyKeyFound != null) {
-            String currHash = HashBuilder.buildPaymentIntentHash(request);
-            String prevHash = idempotencyKeyFound.getRequestHash();
-            KeyStatus status = idempotencyKeyFound.getStatus();
-
-            if (!currHash.equals(prevHash)) {
-                throw new IdempotencyKeyReuseWithDifferentRequestException(
-                        "The idempotency key was already used with a different request."
-                );
-            }
-
-            if (status.equals(KeyStatus.COMPLETED)) {
-                PaymentIntent existingIntent = idempotencyKeyFound.getPaymentIntent();
-
-                if (existingIntent == null) {
-                    throw new IllegalStateException(
-                            "Completed idempotency key has no associated payment intent."
-                    );
-                }
-
-                return existingIntent;
-            }
-
-            if (idempotencyKeyFound.getStatus() == KeyStatus.PROCESSING) {
-                throw new IdempotencyOperationInProgressException(
-                        "An operation with this idempotency key is still in progress."
-                );
-            }
-
-            throw new IllegalStateException(
-                    "Unsupported idempotency key status: " + idempotencyKeyFound.getStatus()
-            );
+            return resolveExistingIdempotencyKey(idempotencyKeyFound, request);
         }
 
         if (!customerRepository.existsByIdAndDeletedFalse(request.customerId())) {
@@ -95,6 +65,41 @@ public class PaymentIntentService {
         idempotencyKeyService.save(idempotencyKeyBuilt);
 
         return intentSaved;
+    }
+
+    private PaymentIntent resolveExistingIdempotencyKey(
+            IdempotencyKey existingKey,
+            CreatePaymentIntentRequest request
+    ) {
+        String currentHash = HashBuilder.buildPaymentIntentHash(request);
+
+        if (!currentHash.equals(existingKey.getRequestHash())) {
+            throw new IdempotencyKeyReuseWithDifferentRequestException(
+                    "The idempotency key was already used with a different request."
+            );
+        }
+
+        if (existingKey.getStatus() == KeyStatus.COMPLETED) {
+            PaymentIntent intent = existingKey.getPaymentIntent();
+
+            if (intent == null) {
+                throw new IllegalStateException(
+                        "Completed idempotency key has no associated payment intent."
+                );
+            }
+
+            return intent;
+        }
+
+        if (existingKey.getStatus() == KeyStatus.PROCESSING) {
+            throw new IdempotencyOperationInProgressException(
+                    "An operation with this idempotency key is still in progress."
+            );
+        }
+
+        throw new IllegalStateException(
+                "Unsupported idempotency key status: " + existingKey.getStatus()
+        );
     }
 
     @Transactional
