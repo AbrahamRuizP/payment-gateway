@@ -14,9 +14,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @NoArgsConstructor
-@Table(name = "idempotency_key", indexes = {
-        @Index(name = "idx_idempotency_key_merchant_key", columnList = "merchant_id, idempotency_key", unique = true)
-})
+@Table(name = "idempotency_key")
 public class IdempotencyKey {
 
     @Id
